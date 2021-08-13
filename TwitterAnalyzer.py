@@ -18,7 +18,7 @@ from textblob import TextBlob
 
 #creates a class called SentimentAnalysis for project execution
 class SentimentAnalysis:
-
+ 
     #initiates 2 lists for the tweet texts
     def __init__(self):
         self.tweets = []
@@ -64,7 +64,7 @@ class SentimentAnalysis:
             self.tweetText.append(self.cleanTweet(tweet.text).encode('utf-8'))
             analysis = TextBlob(tweet.text)
             polarity += analysis.sentiment.polarity
-
+            impact = tweet.favorite_count
             #if the sentiment is 0, a tally is added to neutral
             if (analysis.sentiment.polarity == 0):
                 neutral += 1
@@ -132,7 +132,8 @@ class SentimentAnalysis:
         print(str(wnegative) + "% people thought it was weakly negative")
         print(str(snegative) + "% people thought it was strongly negative")
         print(str(neutral) + "% people thought it was neutral")
-
+        if float(neutral) > 25:
+            print("High neutrality rate could be caused by Unbiased News Sources")
         #outputs detailed pie chart report
         self.plotPieChart(positive, wpositive, spositive, negative, wnegative, snegative, neutral, searchTerm, NoOfTerms)
 
@@ -150,7 +151,7 @@ class SentimentAnalysis:
         labels = ['Positive [' + str(positive) + '%]', 'Weakly Positive [' + str(wpositive) + '%]','Strongly Positive [' + str(spositive) + '%]', 'Neutral [' + str(neutral) + '%]',
                   'Negative [' + str(negative) + '%]', 'Weakly Negative [' + str(wnegative) + '%]', 'Strongly Negative [' + str(snegative) + '%]']
         sizes = [positive, wpositive, spositive, neutral, negative, wnegative, snegative]
-        colors = ['green','lightgreen','darkgreen', 'gold', 'red','lightsalmon','darkred']
+        colors = ['yellowgreen','lightgreen','darkgreen', 'gold', 'red','lightsalmon','darkred']
         patches, texts = plt.pie(sizes, colors=colors, startangle=90)
         plt.legend(patches, labels, loc="best")
         plt.title('How people are reacting on ' + searchTerm + ' by analyzing ' + str(noOfSearchTerms) + ' Tweets.')
