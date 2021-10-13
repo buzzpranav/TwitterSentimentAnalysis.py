@@ -3,8 +3,8 @@ This code is used to take input of a query, such as bitcoin,
 and then analyzes a specified amount of tweets by the user.
 It then uses matplotlib to plot a pie chart based on the sentiment of the tweets
 '''
-#system module is imported for system related commands
-import sys
+#time module is imported for time related commands
+import time
 #tweepy module is import for API connection and taking tweets from twitter
 import tweepy
 #csv module is imported to output the tweets to results.csv for verification
@@ -28,11 +28,15 @@ class SentimentAnalysis:
     def TweetDataStream(self):
         
         #The accesstoken and consumer information is stores here. A Public Key and Secret is used below.
-        consumerKey = "TW9Jd0pnZll4NUrVGsKDu7hdc"
-        consumerSecret = "YOlIsFvjioIZ4ZOe2VxHmnKmDOfed3rXvGktpseEeAdY6ScN0v"
-        accessToken = "2666103462-34DtnGcugMlXiTe2eBfvKn3NcqtKtjtk4E0nwIk"
-        accessTokenSecret = "881rNts3uPn11xfNLDrach4gpC6INgsklY76KfIausmfM"
+        consumerKey = "xxxxxxx" 
+        consumerSecret = "xxxxxxx" 
+        accessToken = "xxxxxxx" 
+        accessTokenSecret = "xxxxxxx"
         
+        while (consumerKey == "xxxxxxx") or (consumerSecret == "xxxxxxx") or (accessToken == "xxxxxxx") or (accessTokenSecret == "xxxxxxx"):
+            print("Invalid Twitter API credentials. Please add your credentials on line 31 of analyzer.py and restart the program")
+            time.sleep(10)
+
         #uses tweepy to use the above AccessToken information to connect to twitter 
         auth = tweepy.OAuthHandler(consumerKey, consumerSecret)
         auth.set_access_token(accessToken, accessTokenSecret)
@@ -43,11 +47,7 @@ class SentimentAnalysis:
         NoOfTerms = int(input("Enter how many tweets to search: "))
 
         #tweepy searches for all related tweets
-        self.tweets = tweepy.Cursor(api.search, q=searchTerm, lang = "en").items(NoOfTerms)
-
-        #program uses the assosiated result.csv to output the tweet text
-        csvFile = open('result.csv', 'a')
-        csvWriter = csv.writer(csvFile)
+        self.tweets = tweepy.Cursor(api.search, q=searchTerm, lang = "en", result_type='popular').items(NoOfTerms)
 
         #sets the sentiment polarity to 0 before analyzing
         polarity = 0
@@ -58,49 +58,56 @@ class SentimentAnalysis:
         wnegative = 0
         snegative = 0
         neutral = 0
-
+        total_impact = 0
+        i = 0
+        
         #uses the tweets taken by tweepy to start analysing with textblob
         for tweet in self.tweets:
             self.tweetText.append(self.cleanTweet(tweet.text).encode('utf-8'))
             analysis = TextBlob(tweet.text)
             polarity += analysis.sentiment.polarity
             impact = tweet.favorite_count
+            
+            print(str(i) + " out of " + str(NoOfTerms) + " Tweets Analyzed..." )
+            i = i + 1
+            if i == NoOfTerms:
+                print("Analysis Complete") 
+            
+            total_impact += impact
             #if the sentiment is 0, a tally is added to neutral
             if (analysis.sentiment.polarity == 0):
-                neutral += 1
+                neutral += (1 + int(impact))
             #if the sentiment is 0-0.3, a tally is added to wpostive (weak positive)
             elif (analysis.sentiment.polarity > 0 and analysis.sentiment.polarity <= 0.3):
-                wpositive += 1
+                wpositive += (1 + int(impact))
             #if the sentiment is 0.3-0.6, a tally is added to postive
             elif (analysis.sentiment.polarity > 0.3 and analysis.sentiment.polarity <= 0.6):
-                positive += 1
+                positive += (1 + int(impact))
             #if the sentiment is 0.6-1, a tally is added to spostive (strong positive)
             elif (analysis.sentiment.polarity > 0.6 and analysis.sentiment.polarity <= 1):
-                spositive += 1
+                spositive += (1 + int(impact))
             #if the sentiment is -0.3 to 0, a tally is added to wnegative (weak negative)
             elif (analysis.sentiment.polarity > -0.3 and analysis.sentiment.polarity <= 0):
-                wnegative += 1
+                wnegative += (1 + int(impact))
             #if the sentiment is -0.6 to -0.3, a tally is added to negative
             elif (analysis.sentiment.polarity > -0.6 and analysis.sentiment.polarity <= -0.3):
-                negative += 1
+                negative += (1 + int(impact))
             #if the sentiment is -1 to -0.6, a tally is added to snegative (strong negative)
             elif (analysis.sentiment.polarity > -1 and analysis.sentiment.polarity <= -0.6):
-                snegative += 1
-
-
-        csvWriter.writerow(self.tweetText)
-        csvFile.close()
+                snegative += (1 + int(impact))
+            #print(snegative, negative, wnegative, neutral, wpositive, positive, spositive)
+            
 
         #uses previous sentiment and number of tweets to get a percentage of each
-        positive = self.percentage(positive, NoOfTerms)
-        wpositive = self.percentage(wpositive, NoOfTerms)
-        spositive = self.percentage(spositive, NoOfTerms)
-        negative = self.percentage(negative, NoOfTerms)
-        wnegative = self.percentage(wnegative, NoOfTerms)
-        snegative = self.percentage(snegative, NoOfTerms)
-        neutral = self.percentage(neutral, NoOfTerms)
+        positive = self.percentage(positive, total_impact)
+        wpositive = self.percentage(wpositive, total_impact)
+        spositive = self.percentage(spositive, total_impact)
+        negative = self.percentage(negative, total_impact)
+        wnegative = self.percentage(wnegative, total_impact)
+        snegative = self.percentage(snegative, total_impact)
+        neutral = self.percentage(neutral, total_impact)
 
-        polarity = polarity / NoOfTerms
+        polarity = polarity / total_impact
 
         print("How people are reacting on " + searchTerm + " by analyzing " + str(NoOfTerms) + " tweets.")
         print()
@@ -132,7 +139,7 @@ class SentimentAnalysis:
         print(str(wnegative) + "% people thought it was weakly negative")
         print(str(snegative) + "% people thought it was strongly negative")
         print(str(neutral) + "% people thought it was neutral")
-        if float(neutral) > 25:
+        if float(neutral) > 30:
             print("High neutrality rate could be caused by Unbiased News Sources")
         #outputs detailed pie chart report
         self.plotPieChart(positive, wpositive, spositive, negative, wnegative, snegative, neutral, searchTerm, NoOfTerms)
@@ -157,10 +164,11 @@ class SentimentAnalysis:
         plt.title('How people are reacting on ' + searchTerm + ' by analyzing ' + str(noOfSearchTerms) + ' Tweets.')
         plt.axis('equal')
         plt.tight_layout()
+        plt.savefig('sentiment.png')
         plt.show()
 
 
-
 if __name__== "__main__":
+    
     sa = SentimentAnalysis()
     sa.TweetDataStream()
